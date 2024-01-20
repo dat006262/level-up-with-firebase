@@ -12,43 +12,52 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+using Firebase.RemoteConfig;
 using UnityEngine;
+namespace Hamster.MapObjects
+{
 
-namespace Hamster.MapObjects {
+    // When stepped on, these accelerate the ball in a direction.
+    public class AccelerationTile : MapObject
+    {
 
-  // When stepped on, these accelerate the ball in a direction.
-  public class AccelerationTile : MapObject {
+        // Static variable shared across all AccelerationTiles, to make
+        // sure that only one acceleration applies at a time.  (Stops them
+        // from getting double- or quadruple-speed, if they manage to touch
+        // more than one tile on the same frame.)
+        static bool triggeredThisFrame;
+        // Default/Label
+        public const string AccelerationTileForceKey = "acceleration_tile_force";
+        public const float AccelerationTileForceDefault = 24.0f;
 
-    // Static variable shared across all AccelerationTiles, to make
-    // sure that only one acceleration applies at a time.  (Stops them
-    // from getting double- or quadruple-speed, if they manage to touch
-    // more than one tile on the same frame.)
-    static bool triggeredThisFrame;
-    // Default/Label
-    public const string AccelerationTileForceKey ="acceleration_tile_force";
-    public const float AccelerationTileForceDefault= 24.0f;
+        // Acceleration force applied to the ball, set through Remote Config.
+        public float Acceleration { get; private set; }
 
-    // Acceleration force applied to the ball, set through Remote Config.
-    public float Acceleration { get; private set; }
-
-    private void Start() {
-      Acceleration = AccelerationTileForceDefault;
-    }
-
-    public void FixedUpdate() {
-      triggeredThisFrame = false;
-    }
-
-    private void OnTriggerStay(Collider collider) {
-      if (!triggeredThisFrame) {
-        triggeredThisFrame = true;
-        if (collider.GetComponent<PlayerController>() != null) {
-          Rigidbody rigidbody = collider.attachedRigidbody;
-          Vector3 force = Vector3.forward * Acceleration;
-          force = transform.TransformDirection(force);
-          rigidbody.AddForce(force, ForceMode.Force);
+        private void Start()
+        {
+            //Acceleration = AccelerationTileForceDefault;
+            var remoteConfig = FirebaseRemoteConfig.DefaultInstance;
+            Acceleration = (float)remoteConfig.GetValue(AccelerationTileForceKey).DoubleValue;
         }
-      }
+
+        public void FixedUpdate()
+        {
+            triggeredThisFrame = false;
+        }
+
+        private void OnTriggerStay(Collider collider)
+        {
+            if (!triggeredThisFrame)
+            {
+                triggeredThisFrame = true;
+                if (collider.GetComponent<PlayerController>() != null)
+                {
+                    Rigidbody rigidbody = collider.attachedRigidbody;
+                    Vector3 force = Vector3.forward * Acceleration;
+                    force = transform.TransformDirection(force);
+                    rigidbody.AddForce(force, ForceMode.Force);
+                }
+            }
+        }
     }
-  }
 }
